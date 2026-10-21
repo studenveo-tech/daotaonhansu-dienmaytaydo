@@ -8,10 +8,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# Hàm đọc file HTML giao diện
 def render_html_template():
-    # Thay "dienmaytaydo.html" bằng tên chính xác của file HTML bạn đã tải lên GitHub
-    file_name = "dienmaytaydo.html" 
+    # Khớp chính xác 100% với tên file HTML bạn đã tải lên GitHub
+    file_name = "h_th_ng_o_t_o_nh_n_s_n_i_b_i_n_m_y_t_y_dienmaytaydo_com.html"
+    
     try:
         with open(file_name, "r", encoding="utf-8") as f:
             html_content = f.read()
@@ -20,10 +20,10 @@ def render_html_template():
         return f"""
         <div style="padding: 20px; font-family: sans-serif; color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px;">
             <h3>Lỗi hệ thống: Không tìm thấy tệp giao diện ({file_name})</h3>
-            <p>Vui lòng kiểm tra lại xem bạn đã tải file HTML lên kho lưu trữ GitHub chưa và tên file trong code đã khớp hoàn toàn chưa.</p>
+            <p>Vui lòng kiểm tra lại tên file HTML trên kho lưu trữ GitHub.</p>
         </div>
         """
 
-# Hiển thị giao diện HTML trực tiếp công khai cho mọi người truy cập
+# Hiển thị giao diện trực tiếp không cần đăng nhập tài khoản
 html_string = render_html_template()
 components.html(html_string, height=1200, scrolling=True)
