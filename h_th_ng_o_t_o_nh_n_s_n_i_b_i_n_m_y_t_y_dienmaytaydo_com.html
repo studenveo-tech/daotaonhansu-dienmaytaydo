@@ -1883,5 +1883,130 @@
       });
     });
   </script>
+<!-- Thư viện hỗ trợ xuất HTML thành ảnh -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <script>
+    // 1. Xóa sạch kết quả tình huống cũ mỗi khi truy cập
+    window.addEventListener("load", function() {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        let key = localStorage.key(i);
+        if (key && key.startsWith("scenario_")) {
+          localStorage.removeItem(key);
+        }
+      }
+
+      // Quản lý tên nhân viên
+      let currentStaff = localStorage.getItem("taydo_staff_name");
+      const staffNameSpan = document.getElementById("headerStaffName");
+      const progressBadge = document.getElementById("headerProgressBadge");
+
+      if (!currentStaff) {
+        currentStaff = prompt("Vui lòng nhập Họ và Tên nhân viên của bạn:", "Nguyễn Văn Minh");
+        if (currentStaff && currentStaff.trim() !== "") {
+          currentStaff = currentStaff.trim();
+          localStorage.setItem("taydo_staff_name", currentStaff);
+        } else {
+          currentStaff = "Nhân viên Tây Đô";
+        }
+      }
+
+      if(staffNameSpan) staffNameSpan.innerText = "NV: " + currentStaff;
+      let userProgress = localStorage.getItem("progress_" + currentStaff) || "0%";
+      if(progressBadge) progressBadge.innerText = userProgress;
+
+      const profileBtn = document.getElementById("openProfileModalBtn");
+      if(profileBtn) {
+        profileBtn.addEventListener("click", function() {
+          let enteredName = prompt("Nhập tên nhân viên của bạn (Nhập đúng tên cũ để xem lại tiến độ):", localStorage.getItem("taydo_staff_name") || "");
+          if (enteredName && enteredName.trim() !== "") {
+            let cleanName = enteredName.trim();
+            localStorage.setItem("taydo_staff_name", cleanName);
+            if(staffNameSpan) staffNameSpan.innerText = "NV: " + cleanName;
+            let userProgress = localStorage.getItem("progress_" + cleanName) || "0%";
+            if(progressBadge) progressBadge.innerText = userProgress;
+            alert("Đã chuyển sang tài khoản nhân viên: " + cleanName);
+          }
+        });
+      }
+    });
+
+    // 2. Khắc phục lỗi chuyển tab trong Streamlit
+    document.addEventListener("DOMContentLoaded", function() {
+      const tabButtons = document.querySelectorAll(".nav-tab-btn");
+      const tabSections = document.querySelectorAll(".tab-section");
+
+      tabSections.forEach(sec => {
+        if(sec.id !== "tab-dashboard") {
+          sec.style.display = "none";
+        }
+      });
+
+      tabButtons.forEach(btn => {
+        btn.addEventListener("click", function() {
+          let targetTab = this.getAttribute("data-tab");
+          
+          tabButtons.forEach(b => {
+            b.classList.remove("bg-white", "text-emerald-900", "shadow-sm");
+            b.classList.add("text-emerald-100", "hover:bg-white/10");
+          });
+          this.classList.remove("text-emerald-100", "hover:bg-white/10");
+          this.classList.add("bg-white", "text-emerald-900", "shadow-sm");
+
+          tabSections.forEach(sec => {
+            if(sec.id === "tab-" + targetTab) {
+              sec.style.display = "block";
+            } else {
+              sec.style.display = "none";
+            }
+          });
+        });
+      });
+    });
+
+    // 3. Xử lý chấm điểm thi sát hạch: Dưới 70 điểm hiện "Học lại", từ 70 điểm cấp chứng nhận
+    document.addEventListener("click", function(e) {
+      const target = e.target.closest("button");
+      if (!target) return;
+
+      let btnText = target.innerText || "";
+      
+      if (btnText.includes("Nộp bài") || btnText.includes("sát hạch") || btnText.includes("Kiểm tra")) {
+        setTimeout(function() {
+          let scoreText = "";
+          const allElements = document.querySelectorAll("div, p, span, h2, h3");
+          for (let el of allElements) {
+            if (el.innerText && el.innerText.includes("/100") && el.innerText.length < 15) {
+              scoreText = el.innerText;
+              break;
+            }
+          }
+
+          let score = parseInt(scoreText.split("/")[0]) || 0;
+          let quizSection = document.getElementById("tab-quiz");
+
+          if (quizSection) {
+            let existingNotif = document.getElementById("examStatusMessage");
+            if (!existingNotif) {
+              existingNotif = document.createElement("div");
+              existingNotif.id = "examStatusMessage";
+              existingNotif.style.cssText = "margin-top: 15px; padding: 12px; border-radius: 8px; font-weight: bold; text-align: center;";
+              quizSection.prepend(existingNotif);
+            }
+
+            if (score < 70) {
+              existingNotif.style.backgroundColor = "#fee2e2";
+              existingNotif.style.color = "#991b1b";
+              existingNotif.innerHTML = `⚠️ Điểm của bạn: ${score}/100 điểm. Chưa đạt yêu cầu (Dưới 70 điểm) 👉 <span style="font-size: 1.2rem; text-decoration: underline;">HỌC LẠI</span>`;
+            } else {
+              existingNotif.style.backgroundColor = "#d1fae5";
+              existingNotif.style.color = "#065f46";
+              existingNotif.innerHTML = `🎉 Chúc mừng! Điểm của bạn: ${score}/100 điểm. Đạt chuẩn yêu cầu! Bạn có thể xem chứng nhận bên dưới.`;
+            }
+          }
+        }, 300);
+      }
+    });
+  </script>
 </body>
 </html>
