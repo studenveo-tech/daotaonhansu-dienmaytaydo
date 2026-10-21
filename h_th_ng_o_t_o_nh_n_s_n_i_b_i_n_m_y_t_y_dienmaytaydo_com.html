@@ -1617,5 +1617,107 @@
       }
     });
   </script>
+<!-- Modal hiển thị & Tải chứng nhận hoàn thành -->
+  <div id="certificateModal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl relative text-slate-800">
+      <button id="closeCertModal" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 font-bold text-xl">&times;</button>
+      
+      <!-- Khung chứa nội dung Chứng nhận (Thiết kế đẹp mắt, chuyên nghiệp) -->
+      <div id="certificateCard" class="border-8 border-emerald-800 p-8 rounded-xl bg-gradient-to-b from-emerald-50 to-white text-center relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-100 rounded-full opacity-50 pointer-events-none"></div>
+        
+        <div class="text-emerald-800 font-extrabold text-sm tracking-widest uppercase mb-1">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+        <div class="text-slate-600 text-xs font-semibold mb-6">Độc lập - Tự do - Hạnh phúc</div>
+        
+        <div class="w-16 h-16 mx-auto bg-emerald-800 text-white rounded-2xl flex items-center justify-center font-black text-2xl shadow-md mb-4">TĐ</div>
+        
+        <h2 class="text-2xl font-black text-emerald-900 uppercase tracking-wide mb-1">Giấy Chứng Nhận Hoàn Thành</h2>
+        <p class="text-xs text-slate-500 italic mb-6">Khóa Đào tạo & Sát hạch Nghiệp vụ Nội bộ</p>
+        
+        <p class="text-sm text-slate-700 mb-2">Hệ thống Đào tạo Điện Máy Tây Đô chứng nhận nhân sự:</p>
+        <h3 id="certStaffName" class="text-2xl font-extrabold text-emerald-800 underline decoration-amber-400 decoration-2 underline-offset-8 mb-4">--</h3>
+        
+        <p class="text-xs text-slate-600 max-w-md mx-auto mb-8">Đã xuất sắc hoàn thành chương trình đào tạo chuyên môn, nắm vững kiến thức sản phẩm và vượt qua kỳ thi sát hạch năm 2026.</p>
+        
+        <div class="flex justify-between items-end px-6 text-xs text-slate-700">
+          <div>
+            <p class="font-semibold">Cần Thơ, ngày <span id="certDate">--</span></p>
+            <p class="font-bold mt-1 text-emerald-900">GIÁM ĐỐC ĐIỀU HÀNH</p>
+            <div class="h-12 flex items-center justify-center font-serif italic text-emerald-800 font-bold opacity-80">Thiên Tín Media</div>
+          </div>
+          <div class="w-20 h-20 border-2 border-dashed border-emerald-700 rounded-full flex items-center justify-center text-[10px] text-emerald-800 font-bold uppercase rotate-12">
+            Đã Phê Duyệt
+          </div>
+        </div>
+      </div>
+
+      <!-- Nút tải ảnh về máy -->
+      <div class="mt-6 flex justify-center gap-4">
+        <button id="downloadCertBtn" class="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-6 py-2.5 rounded-xl shadow-md transition flex items-center gap-2">
+          📥 Tải Chứng Nhận Về Máy (PNG)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thư viện hỗ trợ xuất HTML thành ảnh (html2canvas) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const certModal = document.getElementById("certificateModal");
+      const closeCertBtn = document.getElementById("closeCertModal");
+      const downloadCertBtn = document.getElementById("downloadCertBtn");
+      const certStaffName = document.getElementById("certStaffName");
+      const certDate = document.getElementById("certDate");
+
+      // Set ngày tháng năm hiện tại cho chứng chỉ
+      const today = new Date();
+      certDate.innerText = String(today.getDate()).padStart(2, '0') + "/" + String(today.getMonth() + 1).padStart(2, '0') + "/" + today.getFullYear();
+
+      // Hàm gọi khi nhân viên thi sát hạch đạt yêu cầu
+      window.showCertificate = function() {
+        let currentStaff = localStorage.getItem("taydo_staff_name") || "Nhân viên Tây Đô";
+        certStaffName.innerText = currentStaff;
+        certModal.classList.remove("hidden");
+      };
+
+      // Đóng modal
+      if(closeCertBtn) {
+        closeCertBtn.addEventListener("click", function() {
+          certModal.classList.add("hidden");
+        });
+      }
+
+      // Xử lý tải ảnh chứng nhận về máy bằng html2canvas
+      if(downloadCertBtn) {
+        downloadCertBtn.addEventListener("click", function() {
+          const card = document.getElementById("certificateCard");
+          downloadCertBtn.innerText = "⏳ Đang tạo ảnh...";
+          
+          html2canvas(card, { scale: 2, useCORS: true }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'Chung-Nhan-Dien-May-Tay-Do.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            downloadCertBtn.innerText = "📥 Tải Chứng Nhận Về Máy (PNG)";
+          }).catch(err => {
+            alert("Không thể tải ảnh. Vui lòng thử lại!");
+            downloadCertBtn.innerText = "📥 Tải Chứng Nhận Về Máy (PNG)";
+          });
+        });
+      }
+
+      // Gắn sự kiện tự động kích hoạt hiển thị chứng nhận khi nộp bài thi sát hạch đạt điểm tuyệt đối (Tab Sát hạch)
+      document.addEventListener("click", function(e) {
+        const target = e.target.closest("button");
+        if (!target) return;
+        if (target.innerText.includes("Nộp bài") || target.innerText.includes("Hoàn thành bài")) {
+          // Bạn có thể gọi trực tiếp hàm này khi nhân viên đạt điểm tối đa trong phần Quiz/Sát hạch
+          // Ví dụ: window.showCertificate();
+        }
+      });
+    });
+  </script>
 </body>
 </html>
