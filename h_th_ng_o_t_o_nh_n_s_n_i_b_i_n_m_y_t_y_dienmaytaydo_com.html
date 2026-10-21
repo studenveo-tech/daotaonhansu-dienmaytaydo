@@ -1525,43 +1525,100 @@
       const staffNameSpan = document.getElementById("headerStaffName");
       const progressBadge = document.getElementById("headerProgressBadge");
 
-      // Lấy tên nhân viên đã lưu trong bộ nhớ trình duyệt
+      // 1. Kiểm tra hoặc yêu cầu nhập tên nhân viên khi vào web lần đầu
       let currentStaff = localStorage.getItem("taydo_staff_name");
 
       if (!currentStaff) {
-        currentStaff = prompt("Vui lòng nhập Họ và Tên nhân viên của bạn (Hệ thống sẽ lưu lại lịch sử tiến độ học tập):", "Nguyễn Văn Minh");
+        currentStaff = prompt("Vui lòng nhập Họ và Tên nhân viên của bạn:", "Nguyễn Văn Minh");
         if (currentStaff && currentStaff.trim() !== "") {
           currentStaff = currentStaff.trim();
           localStorage.setItem("taydo_staff_name", currentStaff);
-          if (!localStorage.getItem("progress_" + currentStaff)) {
-            localStorage.setItem("progress_" + currentStaff, "0%");
-          }
         } else {
           currentStaff = "Nhân viên Tây Đô";
         }
       }
 
-      // Tải tiến độ tương ứng với tên nhân viên này
-      let savedProgress = localStorage.getItem("progress_" + currentStaff) || "0%";
+      // Hàm cập nhật hiển thị tên và tiến độ của nhân viên hiện tại lên giao diện
+      function updateUIForCurrentStaff() {
+        if(staffNameSpan) staffNameSpan.innerText = "NV: " + currentStaff;
+        
+        // Lấy tiến độ riêng của đúng nhân viên này (nếu chưa có thì mặc định là 0%)
+        let userProgress = localStorage.getItem("progress_" + currentStaff) || "0%";
+        if(progressBadge) progressBadge.innerText = userProgress;
 
-      // Hiển thị lên giao diện góc trên bên phải
-      if(staffNameSpan) staffNameSpan.innerText = "NV: " + currentStaff;
-      if(progressBadge) progressBadge.innerText = savedProgress;
-
-      // Tính năng bấm vào nút tên ở góc trên để đổi/chọn lại tên nhân viên khác
-      if(profileBtn) {
-        profileBtn.addEventListener("click", function() {
-          let enteredName = prompt("Nhập tên nhân viên của bạn (Chọn đúng tên cũ để xem lại tiến độ học tập):", localStorage.getItem("taydo_staff_name") || "");
-          if (enteredName && enteredName.trim() !== "") {
-            let cleanName = enteredName.trim();
-            localStorage.setItem("taydo_staff_name", cleanName);
-            if(staffNameSpan) staffNameSpan.innerText = "NV: " + cleanName;
-            
-            let userProgress = localStorage.getItem("progress_" + cleanName) || "0%";
-            if(progressBadge) progressBadge.innerText = userProgress;
+        // Đồng bộ trạng thái các nút hoàn thành trên giao diện theo dữ liệu đã lưu của riêng nhân viên này
+        let completedModules = JSON.parse(localStorage.getItem("completed_modules_" + currentStaff) || "[]");
+        const allCompleteBtns = document.querySelectorAll("button");
+        allCompleteBtns.forEach(btn => {
+          if (btn.innerText.includes("Hoàn thành") || btn.innerText.includes("đọc xong")) {
+            // Tìm định danh module/học phần (dựa vào vị trí hoặc text của nút)
+            let moduleId = btn.getAttribute("data-module-id") || btn.parentElement.innerText.substring(0, 20);
+            if (completedModules.includes(moduleId)) {
+              btn.innerText = "Đã hoàn thành";
+              btn.classList.remove("bg-emerald-600", "hover:bg-emerald-700");
+              btn.classList.add("bg-slate-400", "cursor-not-allowed");
+              // Khóa không cho click đổi lại nếu muốn (hoặc giữ nguyên tùy ý)
+            }
           }
         });
       }
+
+      updateUIForCurrentStaff();
+
+      // 2. Tính năng bấm vào nút tên ở góc trên để đổi/chọn lại tên nhân viên khác
+      if(profileBtn) {
+        profileBtn.addEventListener("click", function() {
+          let enteredName = prompt("Nhập tên nhân viên của bạn (Nhập đúng tên cũ để xem lại tiến độ của bạn):", localStorage.getItem("taydo_staff_name") || "");
+          if (enteredName && enteredName.trim() !== "") {
+            currentStaff = enteredName.trim();
+            localStorage.setItem("taydo_staff_name", currentStaff);
+            
+            // Khởi tạo tiến độ nếu nhân viên mới chưa từng học
+            if (!localStorage.getItem("progress_" + currentStaff)) {
+              localStorage.setItem("progress_" + currentStaff, "0%");
+            }
+
+            updateUIForCurrentStaff();
+            location.reload(); // Tải lại trang để đồng bộ sạch sẽ dữ liệu của nhân viên vừa chọn
+          }
+        });
+      }
+
+      // 3. Xử lý phần nút đánh dấu hoàn thành (Khóa lại khi đã bấm để tránh click nhấp nháy bật/tắt)
+      const actionButtons = document.querySelectorAll("button");
+      actionButtons.forEach(btn => {
+        if (btn.innerText.includes("Hoàn thành") || btn.innerText.includes("đọc xong")) {
+          btn.addEventListener("click", function(e) {
+            // Nếu nút đã ở trạng thái khóa thì không cho bấm nữa
+            if (btn.classList.contains("cursor-not-allowed")) {
+              e.preventDefault();
+              return;
+            }
+
+            let moduleId = btn.getAttribute("data-module-id") || btn.parentElement.innerText.substring(0, 20);
+            let completedModules = JSON.parse(localStorage.getItem("completed_modules_" + currentStaff) || "[]");
+
+            if (!completedModules.includes(moduleId)) {
+              completedModules.push(moduleId);
+              localStorage.setItem("completed_modules_" + currentStaff, JSON.stringify(completedModules));
+              
+              // Tính toán phần trăm hoàn thành giả lập dựa trên số module đã bấm (ví dụ tổng có 5 học phần)
+              let totalModules = 5; 
+              let percent = Math.round((completedModules.length / totalModules) * 100) + "%";
+              if(parseInt(percent) > 100) percent = "100%";
+
+              localStorage.setItem("progress_" + currentStaff, percent);
+              if(progressBadge) progressBadge.innerText = percent;
+
+              // Đổi giao diện nút thành "Đã hoàn thành" và khóa luôn
+              btn.innerText = "Đã hoàn thành";
+              btn.classList.remove("bg-emerald-600", "hover:bg-emerald-700");
+              btn.classList.add("bg-slate-400", "cursor-not-allowed");
+            }
+          });
+        }
+      });
+
     });
   </script>
 </body>
