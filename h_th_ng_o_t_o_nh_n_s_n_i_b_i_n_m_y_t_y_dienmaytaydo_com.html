@@ -1718,6 +1718,15 @@
         }
       });
     });
+  // Tự động mở bảng chứng nhận to khi bấm vào khung chứng nhận nhỏ ở cột phải
+  document.addEventListener("click", function(e) {
+    // Kiểm tra nếu người dùng bấm vào khu vực thẻ chứng nhận ở cột phải
+    if (e.target.closest(".bg-gradient-to-b") || e.target.closest(".border-8") || e.target.innerText.includes("CHỨNG NHẬN HOÀN THÀNH ĐÀO TẠO")) {
+      if (typeof window.showCertificate === 'function') {
+        window.showCertificate();
+      }
+    }
+  });
   </script>
 </body>
 </html>
