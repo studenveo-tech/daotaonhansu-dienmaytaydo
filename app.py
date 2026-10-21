@@ -9,7 +9,9 @@ st.set_page_config(
 )
 
 def render_html_template():
-    file_name = "template.html"  # Gọi đúng tên ngắn gọn vừa đổi
+    # Thay "template.html" thành đúng tên file HTML dài của bạn trên GitHub
+    file_name = "h_th_ng_o_t_o_nh_n_s_n_i_b_i_n_m_y_t_y_dienmaytaydo_com.html"
+    ...
     try:
         with open(file_name, "r", encoding="utf-8") as f:
             return f.read()
