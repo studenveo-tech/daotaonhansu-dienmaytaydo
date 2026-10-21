@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
-import json
 
-# Cấu hình trang
+# Cấu hình trang (phải đặt ở dòng đầu tiên của file)
 st.set_page_config(page_title="Đào tạo nhân sự - Điện Máy Tây Đô", page_icon="🎓", layout="wide")
 
 # 1. CƠ SỞ DỮ LIỆU TÀI KHOẢN
@@ -85,15 +84,17 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
-    if st.button("🚪 Đăng xuất tài khoản", type="secondary"):
-        logout()
+    col_a, col_b = st.columns([6, 1])
+    with col_b:
+        if st.button("🚪 Đăng xuất", type="secondary", use_container_width=True):
+            logout()
 
-    # Menu chức năng chính
+    # Menu chức năng chính được phân chia rõ ràng thành các tab
     tab1, tab2, tab3 = st.tabs(["📚 Tra cứu Sản phẩm & Cẩm nang", f"🎓 Học phần Đào tạo ({st.session_state['role']})", "📝 Sát hạch & Kiểm tra"])
 
     with tab1:
-        st.subheader("📚 Tra cứu Nhanh Sản phẩm Điện Máy Tây Đô")
-        search_term = st.text_input("Tìm kiếm theo tên hoặc mã sản phẩm (VD: KGHP11S5):")
+        st.markdown("### 📚 Tra cứu Nhanh Sản phẩm Điện Máy Tây Đô")
+        search_term = st.text_input("Nhập tên hoặc mã sản phẩm để tra cứu (VD: KGHP11S5):")
         
         filtered_df = df_products
         if search_term:
@@ -102,7 +103,7 @@ else:
         st.dataframe(filtered_df, use_container_width=True, hide_index=True)
 
     with tab2:
-        st.subheader(f"🎓 Nội dung Đào tạo chuyên sâu cho vị trí: {st.session_state['role']}")
+        st.markdown(f"### 🎓 Nội dung Đào tạo chuyên sâu cho vị trí: {st.session_state['role']}")
         if st.session_state['role'] == "Kỹ thuật Lắp đặt":
             st.info("🛠️ **Học phần Kỹ thuật:**\n- Hướng dẫn lắp đặt máy lọc nước RO Nóng Nguội Lạnh.\n- Quy trình lắp đặt hệ thống lọc tổng Composite / UF cho nhà dân và doanh nghiệp miền Tây.\n- Cách xử lý sự cố rò rỉ nước, thay lõi định kỳ.")
         elif st.session_state['role'] == "Sale Showroom":
@@ -111,14 +112,14 @@ else:
             st.success("📞 **Học phần CSKH:**\n- Kỹ năng tiếp nhận thông tin bảo hành, bảo dưỡng qua Hotline & Zalo OA.\n- Quy trình nhắc lịch thay lõi lọc định kỳ cho khách hàng cũ.")
 
     with tab3:
-        st.subheader("📝 Bài kiểm tra sát hạch nghiệp vụ")
+        st.markdown("### 📝 Bài kiểm tra sát hạch nghiệp vụ")
         score = 0
         with st.form("quiz_form"):
             user_answers = {}
             for i, q in enumerate(QUIZ_DATA):
-                st.write(f"**Câu {i+1}: {q['question']}**")
+                st.markdown(f"**Câu {i+1}: {q['question']}**")
                 user_answers[i] = st.radio("Chọn đáp án đúng:", q['options'], key=f"q_{i}", index=None)
-                st.write("---")
+                st.markdown("---")
             
             submitted = st.form_submit_button("Nộp bài sát hạch")
             if submitted:
@@ -127,6 +128,6 @@ else:
                         score += 1
                     else:
                         st.error(f"❌ Câu {i+1} chưa chính xác. Đáp án đúng: **{q['answer']}**")
-                st.success(f"🎯 Kết quả bài thi của bạn: {score}/{len(QUIZ_DATA)}")
+                st.markdown(f"### 🎯 Kết quả bài thi của bạn: {score}/{len(QUIZ_DATA)}")
                 if score == len(QUIZ_DATA):
                     st.balloons()
