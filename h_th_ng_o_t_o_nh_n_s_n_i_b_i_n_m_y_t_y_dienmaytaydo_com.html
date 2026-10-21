@@ -1520,105 +1520,101 @@
   </script>
 <!-- Đoạn mã bổ sung tính năng nhớ tên và tiến độ học tập không cần mật khẩu -->
   <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      const profileBtn = document.getElementById("openProfileModalBtn");
+    document.addEventListener("click", function(e) {
+      // Bắt sự kiện khi click vào bất kỳ nút nào có chữ "Hoàn thành" hoặc "đọc xong"
+      const target = e.target.closest("button");
+      if (!target) return;
+
+      let btnText = target.innerText || "";
+      if (btnText.includes("Hoàn thành") || btnText.includes("đọc xong")) {
+        let currentStaff = localStorage.getItem("taydo_staff_name");
+        
+        // Nếu chưa có tên thì bắt buộc nhập
+        if (!currentStaff) {
+          currentStaff = prompt("Vui lòng nhập Họ và Tên nhân viên của bạn:", "Nguyễn Văn Minh");
+          if (currentStaff && currentStaff.trim() !== "") {
+            currentStaff = currentStaff.trim();
+            localStorage.setItem("taydo_staff_name", currentStaff);
+          } else {
+            return;
+          }
+        }
+
+        // Nếu nút đã bị khóa thì chặn không cho bấm nữa
+        if (target.classList.contains("cursor-not-allowed") || target.innerText === "Đã hoàn thành") {
+          e.preventDefault();
+          return;
+        }
+
+        // Lưu lịch sử hoàn thành riêng cho nhân viên này
+        let moduleId = target.getAttribute("data-module-id") || target.parentElement.innerText.substring(0, 30);
+        let completedModules = JSON.parse(localStorage.getItem("completed_modules_" + currentStaff) || "[]");
+
+        if (!completedModules.includes(moduleId)) {
+          completedModules.push(moduleId);
+          localStorage.setItem("completed_modules_" + currentStaff, JSON.stringify(completedModules));
+          
+          // Tính phần trăm tiến độ (Giả sử tổng cộng có 5 học phần chính)
+          let totalModules = 5; 
+          let percent = Math.round((completedModules.length / totalModules) * 100) + "%";
+          if(parseInt(percent) > 100) percent = "100%";
+
+          localStorage.setItem("progress_" + currentStaff, percent);
+          
+          // Cập nhật ngay lập tức lên giao diện badge tiến độ
+          const progressBadge = document.getElementById("headerProgressBadge");
+          if(progressBadge) progressBadge.innerText = percent;
+
+          // Đổi trạng thái nút thành đã hoàn thành và khóa lại
+          target.innerText = "Đã hoàn thành";
+          target.classList.remove("bg-emerald-600", "hover:bg-emerald-700", "bg-emerald-800");
+          target.classList.add("bg-slate-400", "cursor-not-allowed");
+        }
+      }
+    });
+
+    // Khi vừa tải trang xong, tự động khôi phục tên, tiến độ và trạng thái các nút đã học của nhân viên đó
+    window.addEventListener("load", function() {
+      let currentStaff = localStorage.getItem("taydo_staff_name");
       const staffNameSpan = document.getElementById("headerStaffName");
       const progressBadge = document.getElementById("headerProgressBadge");
 
-      // 1. Kiểm tra hoặc yêu cầu nhập tên nhân viên khi vào web lần đầu
-      let currentStaff = localStorage.getItem("taydo_staff_name");
-
-      if (!currentStaff) {
-        currentStaff = prompt("Vui lòng nhập Họ và Tên nhân viên của bạn:", "Nguyễn Văn Minh");
-        if (currentStaff && currentStaff.trim() !== "") {
-          currentStaff = currentStaff.trim();
-          localStorage.setItem("taydo_staff_name", currentStaff);
-        } else {
-          currentStaff = "Nhân viên Tây Đô";
-        }
-      }
-
-      // Hàm cập nhật hiển thị tên và tiến độ của nhân viên hiện tại lên giao diện
-      function updateUIForCurrentStaff() {
+      if (currentStaff) {
         if(staffNameSpan) staffNameSpan.innerText = "NV: " + currentStaff;
-        
-        // Lấy tiến độ riêng của đúng nhân viên này (nếu chưa có thì mặc định là 0%)
         let userProgress = localStorage.getItem("progress_" + currentStaff) || "0%";
         if(progressBadge) progressBadge.innerText = userProgress;
 
-        // Đồng bộ trạng thái các nút hoàn thành trên giao diện theo dữ liệu đã lưu của riêng nhân viên này
+        // Khôi phục trạng thái nút đã bấm trước đó
         let completedModules = JSON.parse(localStorage.getItem("completed_modules_" + currentStaff) || "[]");
-        const allCompleteBtns = document.querySelectorAll("button");
-        allCompleteBtns.forEach(btn => {
-          if (btn.innerText.includes("Hoàn thành") || btn.innerText.includes("đọc xong")) {
-            // Tìm định danh module/học phần (dựa vào vị trí hoặc text của nút)
-            let moduleId = btn.getAttribute("data-module-id") || btn.parentElement.innerText.substring(0, 20);
+        const allButtons = document.querySelectorAll("button");
+        allButtons.forEach(btn => {
+          let btnText = btn.innerText || "";
+          if (btnText.includes("Hoàn thành") || btnText.includes("đọc xong")) {
+            let moduleId = btn.getAttribute("data-module-id") || btn.parentElement.innerText.substring(0, 30);
             if (completedModules.includes(moduleId)) {
               btn.innerText = "Đã hoàn thành";
-              btn.classList.remove("bg-emerald-600", "hover:bg-emerald-700");
+              btn.classList.remove("bg-emerald-600", "hover:bg-emerald-700", "bg-emerald-800");
               btn.classList.add("bg-slate-400", "cursor-not-allowed");
-              // Khóa không cho click đổi lại nếu muốn (hoặc giữ nguyên tùy ý)
             }
           }
         });
       }
 
-      updateUIForCurrentStaff();
-
-      // 2. Tính năng bấm vào nút tên ở góc trên để đổi/chọn lại tên nhân viên khác
+      // Gắn sự kiện đổi tên khi bấm vào ô tên nhân viên ở góc trên
+      const profileBtn = document.getElementById("openProfileModalBtn");
       if(profileBtn) {
         profileBtn.addEventListener("click", function() {
-          let enteredName = prompt("Nhập tên nhân viên của bạn (Nhập đúng tên cũ để xem lại tiến độ của bạn):", localStorage.getItem("taydo_staff_name") || "");
+          let enteredName = prompt("Nhập tên nhân viên của bạn (Nhập đúng tên cũ để xem lại tiến độ):", localStorage.getItem("taydo_staff_name") || "");
           if (enteredName && enteredName.trim() !== "") {
-            currentStaff = enteredName.trim();
-            localStorage.setItem("taydo_staff_name", currentStaff);
-            
-            // Khởi tạo tiến độ nếu nhân viên mới chưa từng học
-            if (!localStorage.getItem("progress_" + currentStaff)) {
-              localStorage.setItem("progress_" + currentStaff, "0%");
+            let cleanName = enteredName.trim();
+            localStorage.setItem("taydo_staff_name", cleanName);
+            if (!localStorage.getItem("progress_" + cleanName)) {
+              localStorage.setItem("progress_" + cleanName, "0%");
             }
-
-            updateUIForCurrentStaff();
-            location.reload(); // Tải lại trang để đồng bộ sạch sẽ dữ liệu của nhân viên vừa chọn
+            location.reload(); // Tải lại trang để load đúng dữ liệu của nhân viên mới chọn
           }
         });
       }
-
-      // 3. Xử lý phần nút đánh dấu hoàn thành (Khóa lại khi đã bấm để tránh click nhấp nháy bật/tắt)
-      const actionButtons = document.querySelectorAll("button");
-      actionButtons.forEach(btn => {
-        if (btn.innerText.includes("Hoàn thành") || btn.innerText.includes("đọc xong")) {
-          btn.addEventListener("click", function(e) {
-            // Nếu nút đã ở trạng thái khóa thì không cho bấm nữa
-            if (btn.classList.contains("cursor-not-allowed")) {
-              e.preventDefault();
-              return;
-            }
-
-            let moduleId = btn.getAttribute("data-module-id") || btn.parentElement.innerText.substring(0, 20);
-            let completedModules = JSON.parse(localStorage.getItem("completed_modules_" + currentStaff) || "[]");
-
-            if (!completedModules.includes(moduleId)) {
-              completedModules.push(moduleId);
-              localStorage.setItem("completed_modules_" + currentStaff, JSON.stringify(completedModules));
-              
-              // Tính toán phần trăm hoàn thành giả lập dựa trên số module đã bấm (ví dụ tổng có 5 học phần)
-              let totalModules = 5; 
-              let percent = Math.round((completedModules.length / totalModules) * 100) + "%";
-              if(parseInt(percent) > 100) percent = "100%";
-
-              localStorage.setItem("progress_" + currentStaff, percent);
-              if(progressBadge) progressBadge.innerText = percent;
-
-              // Đổi giao diện nút thành "Đã hoàn thành" và khóa luôn
-              btn.innerText = "Đã hoàn thành";
-              btn.classList.remove("bg-emerald-600", "hover:bg-emerald-700");
-              btn.classList.add("bg-slate-400", "cursor-not-allowed");
-            }
-          });
-        }
-      });
-
     });
   </script>
 </body>
