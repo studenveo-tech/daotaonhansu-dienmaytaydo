@@ -1518,5 +1518,79 @@
       });
     });
   </script>
+<script>
+    // Khắc phục triệt để lỗi không bấm được các tab khi chạy qua Streamlit Iframe
+    document.addEventListener("DOMContentLoaded", function() {
+      const tabButtons = document.querySelectorAll(".nav-tab-btn");
+      const tabSections = document.querySelectorAll(".tab-section");
+
+      // Ẩn tất cả các section, chỉ hiện dashboard lúc đầu
+      tabSections.forEach(sec => {
+        if(sec.id !== "tab-dashboard") {
+          sec.style.display = "none";
+        }
+      });
+
+      tabButtons.forEach(btn => {
+        btn.addEventListener("click", function() {
+          let targetTab = this.getAttribute("data-tab");
+          
+          // Đổi màu sắc nút active trên menu
+          tabButtons.forEach(b => {
+            b.classList.remove("bg-white", "text-emerald-900", "shadow-sm");
+            b.classList.add("text-emerald-100", "hover:bg-white/10");
+          });
+          this.classList.remove("text-emerald-100", "hover:bg-white/10");
+          this.classList.add("bg-white", "text-emerald-900", "shadow-sm");
+
+          // Hiện section tương ứng, ẩn các section khác
+          tabSections.forEach(sec => {
+            if(sec.id === "tab-" + targetTab) {
+              sec.style.display = "block";
+            } else {
+              sec.style.display = "none";
+            }
+          });
+        });
+      });
+    });
+
+    // Tự động khôi phục tên nhân viên và tiến độ đã lưu
+    window.addEventListener("load", function() {
+      let currentStaff = localStorage.getItem("taydo_staff_name");
+      const staffNameSpan = document.getElementById("headerStaffName");
+      const progressBadge = document.getElementById("headerProgressBadge");
+
+      if (!currentStaff) {
+        currentStaff = prompt("Vui lòng nhập Họ và Tên nhân viên của bạn:", "Nguyễn Văn Minh");
+        if (currentStaff && currentStaff.trim() !== "") {
+          currentStaff = currentStaff.trim();
+          localStorage.setItem("taydo_staff_name", currentStaff);
+        } else {
+          currentStaff = "Nhân viên Tây Đô";
+        }
+      }
+
+      if(staffNameSpan) staffNameSpan.innerText = "NV: " + currentStaff;
+      let userProgress = localStorage.getItem("progress_" + currentStaff) || "0%";
+      if(progressBadge) progressBadge.innerText = userProgress;
+
+      // Bấm vào tên để đổi hoặc chọn lại tên cũ để xem tiến độ
+      const profileBtn = document.getElementById("openProfileModalBtn");
+      if(profileBtn) {
+        profileBtn.addEventListener("click", function() {
+          let enteredName = prompt("Nhập tên nhân viên của bạn (Nhập đúng tên cũ để xem lại tiến độ):", localStorage.getItem("taydo_staff_name") || "");
+          if (enteredName && enteredName.trim() !== "") {
+            let cleanName = enteredName.trim();
+            localStorage.setItem("taydo_staff_name", cleanName);
+            if(staffNameSpan) staffNameSpan.innerText = "NV: " + cleanName;
+            let userProgress = localStorage.getItem("progress_" + cleanName) || "0%";
+            if(progressBadge) progressBadge.innerText = userProgress;
+            alert("Đã chuyển sang tài khoản nhân viên: " + cleanName);
+          }
+        });
+      }
+    });
+  </script>
 </body>
 </html>
