@@ -1695,5 +1695,193 @@
       });
     });
   </script>
+<!-- Thư viện hỗ trợ xuất HTML thành ảnh (html2canvas) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // 1. KHẮC PHỤC LỖI CHUYỂN TAB TRONG STREAMLIT
+      const tabButtons = document.querySelectorAll(".nav-tab-btn");
+      const tabSections = document.querySelectorAll(".tab-section");
+
+      tabSections.forEach(sec => {
+        if(sec.id !== "tab-dashboard") {
+          sec.style.display = "none";
+        }
+      });
+
+      tabButtons.forEach(btn => {
+        btn.addEventListener("click", function() {
+          let targetTab = this.getAttribute("data-tab");
+          
+          tabButtons.forEach(b => {
+            b.classList.remove("bg-white", "text-emerald-900", "shadow-sm");
+            b.classList.add("text-emerald-100", "hover:bg-white/10");
+          });
+          this.classList.remove("text-emerald-100", "hover:bg-white/10");
+          this.classList.add("bg-white", "text-emerald-900", "shadow-sm");
+
+          tabSections.forEach(sec => {
+            if(sec.id === "tab-" + targetTab) {
+              sec.style.display = "block";
+            } else {
+              sec.style.display = "none";
+            }
+          });
+        });
+      });
+    });
+
+    // 2. QUẢN LÝ TÊN NHÂN VIÊN VÀ TIẾN ĐỘ HỌC TẬP
+    window.addEventListener("load", function() {
+      let currentStaff = localStorage.getItem("taydo_staff_name");
+      const staffNameSpan = document.getElementById("headerStaffName");
+      const progressBadge = document.getElementById("headerProgressBadge");
+
+      if (!currentStaff) {
+        currentStaff = prompt("Vui lòng nhập Họ và Tên nhân viên của bạn:", "Nguyễn Văn Minh");
+        if (currentStaff && currentStaff.trim() !== "") {
+          currentStaff = currentStaff.trim();
+          localStorage.setItem("taydo_staff_name", currentStaff);
+        } else {
+          currentStaff = "Nhân viên Tây Đô";
+        }
+      }
+
+      if(staffNameSpan) staffNameSpan.innerText = "NV: " + currentStaff;
+      let userProgress = localStorage.getItem("progress_" + currentStaff) || "0%";
+      if(progressBadge) progressBadge.innerText = userProgress;
+
+      const profileBtn = document.getElementById("openProfileModalBtn");
+      if(profileBtn) {
+        profileBtn.addEventListener("click", function() {
+          let enteredName = prompt("Nhập tên nhân viên của bạn (Nhập đúng tên cũ để xem lại tiến độ):", localStorage.getItem("taydo_staff_name") || "");
+          if (enteredName && enteredName.trim() !== "") {
+            let cleanName = enteredName.trim();
+            localStorage.setItem("taydo_staff_name", cleanName);
+            if(staffNameSpan) staffNameSpan.innerText = "NV: " + cleanName;
+            let userProgress = localStorage.getItem("progress_" + cleanName) || "0%";
+            if(progressBadge) progressBadge.innerText = userProgress;
+            alert("Đã chuyển sang tài khoản nhân viên: " + cleanName);
+          }
+        });
+      }
+
+      // 3. XỬ LÝ SÁT HẠCH, KIỂM TRA ĐIỂM VÀ CẤP CHỨNG CHỈ (< 70 ĐIỂM HIỆN "HỌC LẠI")
+      const certModal = document.getElementById("certificateModal");
+      const closeCertBtn = document.getElementById("closeCertModal");
+      const downloadCertBtn = document.getElementById("downloadCertBtn");
+      const certStaffName = document.getElementById("certStaffName");
+      const certDate = document.getElementById("certDate");
+
+      const today = new Date();
+      if(certDate) {
+        certDate.innerText = String(today.getDate()).padStart(2, '0') + "/" + String(today.getMonth() + 1).padStart(2, '0') + "/" + today.getFullYear();
+      }
+
+      window.showCertificate = function() {
+        let activeStaff = localStorage.getItem("taydo_staff_name") || "Nhân viên Tây Đô";
+        if(certStaffName) certStaffName.innerText = activeStaff;
+        if(certModal) certModal.classList.remove("hidden");
+      };
+
+      if(closeCertBtn) {
+        closeCertBtn.addEventListener("click", function() {
+          certModal.classList.add("hidden");
+        });
+      }
+
+      if(downloadCertBtn) {
+        downloadCertBtn.addEventListener("click", function() {
+          const card = document.getElementById("certificateCard");
+          downloadCertBtn.innerText = "⏳ Đang tạo ảnh...";
+          
+          html2canvas(card, { scale: 2, useCORS: true }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'Chung-Nhan-Dien-May-Tay-Do.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            downloadCertBtn.innerText = "📥 Tải Chứng Nhận Về Máy (PNG)";
+          }).catch(err => {
+            alert("Không thể tải ảnh. Vui lòng thử lại!");
+            downloadCertBtn.innerText = "📥 Tải Chứng Nhận Về Máy (PNG)";
+          });
+        });
+      }
+
+      // Bắt sự kiện khi nhân viên bấm nộp bài thi hoặc xem kết quả
+      document.addEventListener("click", function(e) {
+        const target = e.target.closest("button");
+        if (!target) return;
+
+        let btnText = target.innerText || "";
+        
+        // Nếu là nút nộp bài kiểm tra / sát hạch
+        if (btnText.includes("Nộp bài") || btnText.includes("sát hạch") || btnText.includes("Kiểm tra")) {
+          setTimeout(function() {
+            // Tự động quét tìm điểm số đang hiển thị trên màn hình (ví dụ dạng "80/100" hoặc "X/100")
+            let scoreText = "";
+            const allElements = document.querySelectorAll("div, p, span, h2, h3");
+            for (let el of allElements) {
+              if (el.innerText && el.innerText.includes("/100") && el.innerText.length < 15) {
+                scoreText = el.innerText;
+                break;
+              }
+            }
+
+            let score = parseInt(scoreText.split("/")[0]) || 0;
+
+            // Tìm hoặc tạo vùng hiển thị dòng chữ "Học lại" hoặc "Đạt chuẩn"
+            let quizSection = document.getElementById("tab-quiz");
+            if (quizSection) {
+              let existingNotif = document.getElementById("examStatusMessage");
+              if (!existingNotif) {
+                existingNotif = document.createElement("div");
+                existingNotif.id = "examStatusMessage";
+                existingNotif.style.cssText = "margin-top: 15px; padding: 12px; border-radius: 8px; font-weight: bold; text-align: center;";
+                quizSection.prepend(existingNotif);
+              }
+
+              // Kiểm tra điều kiện dưới 70 điểm
+              if (score < 70) {
+                existingNotif.style.backgroundColor = "#fee2e2";
+                existingNotif.style.color = "#991b1b";
+                existingNotif.innerHTML = `⚠️ Điểm của bạn: ${score}/100 điểm. Chưa đạt yêu cầu (Dưới 70 điểm) 👉 <span style="font-size: 1.2rem; text-decoration: underline;">HỌC LẠI</span>`;
+                
+                // Đảm bảo không bật bảng chứng nhận
+                if(certModal) certModal.classList.add("hidden");
+              } else {
+                existingNotif.style.backgroundColor = "#d1fae5";
+                existingNotif.style.color = "#065f46";
+                existingNotif.innerHTML = `🎉 Chúc mừng! Điểm của bạn: ${score}/100 điểm. Đạt chuẩn yêu cầu! Bạn có thể nhận chứng nhận bên dưới.`;
+              }
+            }
+          }, 300);
+        }
+
+        // Nếu bấm vào khung chứng nhận để xem bản to
+        if (e.target.closest("#tab-quiz") && (btnText.includes("CHỨNG NHẬN") || btnText.includes("ĐẠT CHUẨN") || e.target.closest(".border"))) {
+          // Kiểm tra lại điểm trước khi cho phép mở chứng nhận to
+          let scoreText = "";
+          const allElements = document.querySelectorAll("div, p, span, h2, h3");
+          for (let el of allElements) {
+            if (el.innerText && el.innerText.includes("/100") && el.innerText.length < 15) {
+              scoreText = el.innerText;
+              break;
+            }
+          }
+          let score = parseInt(scoreText.split("/")[0]) || 0;
+
+          if (score >= 70) {
+            if (typeof window.showCertificate === 'function') {
+              window.showCertificate();
+            }
+          } else {
+            alert("Bạn chưa đạt 70 điểm nên chưa thể nhận chứng nhận. Vui lòng Học lại!");
+          }
+        }
+      });
+    });
+  </script>
 </body>
 </html>
